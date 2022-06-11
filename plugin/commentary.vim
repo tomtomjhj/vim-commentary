@@ -102,12 +102,18 @@ function! s:textobject(inner) abort
   endif
 endfunction
 
+function! s:insert()
+  let [l, r] = s:surroundings()
+  return l . r . repeat("\<C-G>U\<Left>", strchars(r))
+endfunction
+
 command! -range -bar -bang Commentary call s:go(<line1>,<line2>,<bang>0)
 xnoremap <expr>   <Plug>Commentary     <SID>go()
 nnoremap <expr>   <Plug>Commentary     <SID>go()
 nnoremap <expr>   <Plug>CommentaryLine <SID>go() . '_'
 onoremap <silent> <Plug>Commentary        :<C-U>call <SID>textobject(get(v:, 'operator', '') ==# 'c')<CR>
 nnoremap <silent> <Plug>ChangeCommentary c:<C-U>call <SID>textobject(1)<CR>
+inoremap <expr>   <Plug>CommentaryInsert <SID>insert()
 
 if !hasmapto('<Plug>Commentary') || maparg('gc','n') ==# ''
   xmap gc  <Plug>Commentary
