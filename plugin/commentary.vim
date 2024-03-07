@@ -13,15 +13,18 @@ function! s:surroundings() abort
         \ &commentstring, '^$', '%s', ''), '\S\zs%s',' %s', '') ,'%s\ze\S', '%s ', '')), '%s', 1)
 endfunction
 
-function! s:strip_white_space(l,r,line) abort
-  let [l, r] = [a:l, a:r]
-  if l[-1:] ==# ' ' && stridx(a:line,l) == -1 && stridx(a:line,l[0:-2]) == 0
-    let l = l[:-2]
+" l_go: Used for (un)commenting. Doesn't get stripped by empty comment.
+" l: Used for checking comment range. Stripped by empty comment.
+function! s:strip_white_space(l,l_go,r,line) abort
+  let [l, l_go, r] = [a:l, a:l_go, a:r]
+  if l_go[-1:] ==# ' ' && stridx(a:line,l_go) == -1 && stridx(a:line,l_go[0:-2]) == 0
+    if l[-1:]    ==# ' '    | let l    = l[:-2]    | endif
+    if l_go[:-2] !=# a:line | let l_go = l_go[:-2] | endif
   endif
   if r[0] ==# ' ' && (' ' . a:line)[-strlen(r)-1:] != r && a:line[-strlen(r):] == r[1:]
     let r = r[1:]
   endif
-  return [l, r]
+  return [l, l_go, r]
 endfunction
 
 function! s:go(...) abort
@@ -35,11 +38,12 @@ function! s:go(...) abort
   endif
 
   let [l, r] = s:surroundings()
+  let l_go = l
   let uncomment = 2
   let force_uncomment = a:0 > 2 && a:3
   for lnum in range(lnum1,lnum2)
     let line = matchstr(getline(lnum),'\S.*\s\@<!')
-    let [l, r] = s:strip_white_space(l,r,line)
+    let [l, l_go, r] = s:strip_white_space(l,l_go,r,line)
     if len(line) && (stridx(line,l) || line[strlen(line)-strlen(r) : -1] != r)
       let uncomment = 0
     endif
@@ -61,14 +65,14 @@ function! s:go(...) abort
     endif
     if force_uncomment
       if line =~ '^\s*' . l
-        let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
+        let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l_go):-strlen(r)-1]','')
         if line =~# '^\s\+$' | let line = '' | endif
       endif
     elseif uncomment
-      let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
+      let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l_go):-strlen(r)-1]','')
       if line =~# '^\s\+$' | let line = '' | endif
     else
-      let line = substitute(line,'^\%('.matchstr(getline(lnum1),indent).'\|\s*\)\zs.*\S\@<=','\=l.submatch(0).r','')
+      let line = substitute(line,'^\%('.matchstr(getline(lnum1),indent).'\|\s*\)\zs.*\S\@<=','\=l_go.submatch(0).r','')
     endif
     call add(lines, line)
   endfor
@@ -90,7 +94,7 @@ function! s:textobject(inner) abort
     while lnums[index] != bound && line ==# '' || !(stridx(line,l) || line[strlen(line)-strlen(r) : -1] != r)
       let lnums[index] += dir
       let line = matchstr(getline(lnums[index]+dir),'\S.*\s\@<!')
-      let [l, r] = s:strip_white_space(l,r,line)
+      let [l, _, r] = s:strip_white_space(l,l,r,line)
     endwhile
   endfor
   while (a:inner || lnums[1] != line('$')) && empty(getline(lnums[0]))
