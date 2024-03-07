@@ -62,9 +62,11 @@ function! s:go(...) abort
     if force_uncomment
       if line =~ '^\s*' . l
         let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
+        if line =~# '^\s\+$' | let line = '' | endif
       endif
     elseif uncomment
       let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
+      if line =~# '^\s\+$' | let line = '' | endif
     else
       let line = substitute(line,'^\%('.matchstr(getline(lnum1),indent).'\|\s*\)\zs.*\S\@<=','\=l.submatch(0).r','')
     endif
