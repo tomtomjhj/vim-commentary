@@ -3,7 +3,7 @@
 " Version:      1.3
 " GetLatestVimScripts: 3695 1 :AutoInstall: commentary.vim
 
-if exists("g:loaded_commentary") || v:version < 703
+if exists("g:loaded_commentary") || v:version < 704
   finish
 endif
 let g:loaded_commentary = 1
@@ -77,13 +77,7 @@ function! s:go(...) abort
     call add(lines, line)
   endfor
   call setline(lnum1, lines)
-  let modelines = &modelines
-  try
-    set modelines=0
-    silent doautocmd User CommentaryPost
-  finally
-    let &modelines = modelines
-  endtry
+  silent doautocmd <nomodeline> User CommentaryPost
   return ''
 endfunction
 
