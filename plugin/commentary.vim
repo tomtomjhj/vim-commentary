@@ -10,7 +10,9 @@ let g:loaded_commentary = 1
 
 function! s:surroundings() abort
   return split(get(b:, 'commentary_format', substitute(substitute(substitute(
-        \ &commentstring, '^$', '%s', ''), '\S\zs%s',' %s', '') ,'%s\ze\S', '%s ', '')), '%s', 1)
+        \ has('nvim-0.10') ? luaeval('require"commentary".get_commentstring()') : &commentstring,
+        \ '^$', '%s', ''), '\S\zs%s',' %s', '') ,'%s\ze\S', '%s ', '')),
+        \ '%s', 1)
 endfunction
 
 " l_go: Used for (un)commenting. Doesn't get stripped by empty comment.
